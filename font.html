@@ -1,0 +1,940 @@
+<html>
+  <head>
+    <style type="text/css">
+      table, td, tr {  color: inherit;
+                    background-color: inherit;
+                        }
+    </style>
+    <link rel="stylesheet" href="spincontrol/style.css" type="text/css" media="screen" />
+    <script type="text/javascript" src="spincontrol/javascript.js"></script>    
+    <script type="text/javascript" src="jscolor/jscolor.js"></script>
+    <script type="text/javascript">
+
+
+    var upperVowels = new CharGroup (65, 69, 73, 79, 85);
+    var lowerVowels = new CharGroup (97, 101, 105, 111, 117);
+    var upperCase = new CharRange (0x0041, 0x005A);
+    var lowerCase = new CharRange (0x0061, 0x007A);
+
+    var numbers = new CharRange (48, 57);
+    
+    var symbols1 = new CharRange (33, 47);
+    var symbols2 = new CharRange (58, 64);
+    var symbols3 = new CharRange (91, 96);
+    var symbols4 = new CharRange (123, 126);
+
+
+    
+
+    var symbols = new CharRangeGroup (symbols1, symbols2, symbols3, symbols4);
+
+    var defaultText="AalAui BiaBaz CojCeo DabDud EifEud FofFao GuiGup HexHof IuaIaw JatJeq KinKel LosLov MezMod NusNeo OihOug PiqPin QecQes RorRoj SioSoy TapTao UeyUeu VepVuq WujWem XuiXui YupYuk ZaoZuq aizaez bovboc cafcaz duqdaw eeseez fagfus gulgek hiohus ioaiem jicjiw kiskek lihloh moqmec nejnuo oeqoae ponpoh qeuqeu risret setsec tiztah uuwuiu venvif wimwug xojxei yoryit zalzai AATAUO BUMBUO CIYCIU DOJDUX EEREAN FAOFAW GAWGIL HIBHOR IEKIEA JUAJUE KUHKEJ LINLIE MUXMEO NUZNUX OIBOUP POYPEM QIDQUA RAQRII SOTSIC TISTAH UAKUAR VEXVAM WIVWOS XUGXID YIGYEF ZIEZIA AUNAOP BEEBEQ CIJCEP DUBDEW 766621 715836 545437 912680 307471 973879 249868 700036 161131 608482 301409 129633 !:[{)@_}  ;\\|(>`|\"  ]})@[}#<  ~#:[|$=^  %>_{\"=[}  ?`|,@]}&  [}/=[|'@  ~\"<[|(:\\  );]{-@]{  <^|$=\\~*  _}'>^}+=  ~&@^|,>`  -?[{,=^}  @\\|#;[}.  ]}+=^|/:  ~,=[~!;^  \"<_{,<[{  =`|$=`{#  [}#<_|$>  ~&:`{%?\\"
+
+    var min;
+    var max;
+    var block;
+    var step;
+    var charstart;
+    var charend;
+    var family;
+    var randomseed;
+    var showDefaultText;
+    var Text;
+    var useText;
+    var fgcolor;
+    var bgcolor;
+    var randomCountcalls = 0;   // used in random number generation
+    var numberCountcalls = 0;   // used in random number generation
+    var symbolCountcalls = 0;   // used in random number generation
+    var upperCountcalls = 0;   // used in random number generation
+    var lowerCountcalls = 0;   // used in random number generation
+
+    function resetValues(){
+      block = 200;
+      min=12;
+      max=15;
+      step=1;
+      charstart=0x0020;
+      charend=0x007F;
+      family="Arial";
+      randomseed=1;
+      showDefaultText = true;
+      Text = defaultText;
+      useText = "";
+      bgcolor = "FFFFFF";
+      fgcolor = "000000";
+
+    }
+
+
+    /* HASH CLASS */
+    function Hash()
+    {
+      this.length = 0;
+      this.items = new Array();
+
+      for (var i = 0; i < arguments.length; i += 2) {
+        if (typeof(arguments[i + 1]) != 'undefined') {
+          this.items[arguments[i]] = arguments[i + 1];
+          this.length++;
+        }
+      }
+
+      this.removeItem = function(in_key)
+      {
+        var tmp_previous;
+        if (typeof(this.items[in_key]) != 'undefined') {
+          this.length--;
+          var tmp_previous = this.items[in_key];
+          delete this.items[in_key];
+        }
+
+        return tmp_previous;
+      }
+
+      this.getItem = function(in_key) {
+        return this.items[in_key];
+      }
+
+      this.setItem = function(in_key, in_value)
+      {
+        var tmp_previous;
+        if (typeof(in_value) != 'undefined') {
+          if (typeof(this.items[in_key]) == 'undefined') {
+            this.length++;
+          }
+          else {
+            tmp_previous = this.items[in_key];
+          }
+
+          this.items[in_key] = in_value;
+        }
+
+        return tmp_previous;
+      }
+
+      this.hasItem = function(in_key)
+      {
+        return typeof(this.items[in_key]) != 'undefined';
+      }
+
+      this.clear = function()
+      {
+        for (var i in this.items) {
+          delete this.items[i];
+        }
+
+        this.length = 0;
+      }
+    }
+
+    /* Character Range CLASS */
+    function CharRange()
+    {
+      this.startChar = arguments[0];
+      this.endChar = arguments[1];
+      this.length = this.endChar - this.startChar + 1;
+
+      this.getStartChar = function ()
+      {
+        return this.startChar;
+      }
+      
+      this.getEndChar = function ()
+      {
+        return this.endChar;
+      }
+      
+      this.getLength = function ()
+      {
+        return this.length;
+      }
+      
+      this.getChar = function (in_index)
+      {
+        if (in_index > this.getLength()  - 1) alert ("charrange: Asking for: " + in_index + " but Length is only " + this.getLength());
+        return this.startChar + in_index;
+      }
+
+      this.getRandomChar = function (in_seed)
+      {
+        return this.startChar + Math.round( (this.endChar - this.startChar) * generateRandom(in_seed) );
+      }
+
+      this.isValid = function (in_value)
+      {
+        if (in_value >= this.startChar && in_value <= this.endChar) return true;
+        else return false;
+      }
+
+    }
+
+    /* Group of Character Ranges CLASS*/
+    function CharRangeGroup()
+    {
+      this.arrayLength = 0;
+      this.items = new Array();
+
+      for (var i = 0; i < arguments.length; i += 1) {
+        if (typeof(arguments[i]) != 'undefined') {
+          this.items[i] = arguments[i];
+          this.arrayLength++;
+        }
+      }
+
+      this.getLength = function ()
+      {
+        var charCounter = 0;
+        for (var rangeCounter = 0; rangeCounter < this.arrayLength; rangeCounter += 1) {
+          charCounter += this.items[rangeCounter].getLength();
+        }
+        return charCounter;
+      }
+
+      this.getStartChar = function ()
+      {
+        return this.getChar(0);
+      }
+
+      this.getEndChar = function ()
+      {
+        return this.getChar(this.getLength() - 1);
+      }      
+
+      this.getChar = function (in_index)
+      {
+        if (in_index > this.getLength() - 1 ) alert ("charrangegroup:  Asking for: " + in_index + " but Length is only " + this.getLength());
+        var countTotalChars = 0;
+        var charTarget = in_index;
+
+        for (var rangeCounter = 0; rangeCounter < this.arrayLength; rangeCounter += 1)
+        {
+          for (var charCounter = 0; charCounter < this.items[rangeCounter].getLength(); charCounter += 1)
+          {
+            if (countTotalChars + charCounter == charTarget )
+            {
+              return this.items[rangeCounter].getChar(charCounter);
+            }
+            else countTotalChars += 1;
+          }
+        }
+        return this.items[this.arrayLength-1].getChar( this.items[this.arrayLength-1].getLength() - 1 );
+      }
+
+      this.getRandomChar = function (in_seed)
+      {
+        return this.getChar ( Math.round( (this.getLength() - 1) * generateRandom (in_seed)) );
+      }
+
+      this.isValid = function (in_value)
+      {
+        for (var i = 0; i < this.getLength(); i++)
+        {
+           if (this.getChar(i) == in_value) return true;
+        }
+        return false;
+      }
+
+      
+      
+    }
+
+
+    /* Group of Characters CLASS*/
+    function CharGroup()
+    {
+      
+      this.length = 0;
+      this.items = new Array();
+
+      this.getLength = function ()
+      {
+        return this.length;
+      }
+
+      for (var i = 0; i < arguments.length; i += 1) {
+        if (typeof(arguments[i]) != 'undefined') {
+          this.items[i] = arguments[i];
+          this.length++;
+        }
+      }
+
+      this.getChar = function (in_index)
+      {
+        return this.items[in_index];
+      }
+
+      this.getRandomChar = function (in_seed)
+      {
+        return this.getChar ( Math.round( (this.getLength() - 1) * generateRandom (in_seed)));
+      }
+
+      this.isValid = function (in_value)
+      {
+        for (var i = 0; i < this.getLength(); i++)
+        {
+           if (this.items[i] == in_value) return true;
+        }
+        return false;
+      }
+    }
+
+
+    function symbolWord6(mainChar)
+    {
+      symbolCountcalls += 1;
+      var word = "";
+      word += String.fromCharCode(mainChar);
+      word += String.fromCharCode(symbols.getRandomChar(randomseed * 65 + mainChar));
+      word += String.fromCharCode(symbols.getRandomChar(randomseed * 45 + mainChar));
+      word += String.fromCharCode(mainChar);
+      word += String.fromCharCode(symbols.getRandomChar(randomseed * 134 + mainChar));
+      word += String.fromCharCode(symbols.getRandomChar(randomseed * 198 + mainChar));
+      /*alert(word);*/
+      return word;
+    }
+
+    function numberWord6(mainChar)
+    {
+      numberCountcalls += 1;
+      var word = "";
+      word += String.fromCharCode(mainChar);
+      word += String.fromCharCode(numbers.getRandomChar(randomseed * 565 + numberCountcalls));
+      word += String.fromCharCode(numbers.getRandomChar(randomseed * 345 + numberCountcalls));
+      word += String.fromCharCode(mainChar);
+      word += String.fromCharCode(numbers.getRandomChar(randomseed * 34 + numberCountcalls));
+      word += String.fromCharCode(numbers.getRandomChar(randomseed * 98 + numberCountcalls));
+      return word;
+    }
+
+    function englishMixedWord6 (mainChar)
+    {
+      lowerCountcalls += 1;
+      upperCountcalls += 1;
+      var word = "";
+      word += String.fromCharCode(mainChar);
+      word += String.fromCharCode(lowerVowels.getRandomChar(randomseed * 1111 + lowerCountcalls + upperCountcalls + numberCountcalls + mainChar ));
+      word += String.fromCharCode(lowerCase.getRandomChar(randomseed * 2222 + lowerCountcalls + upperCountcalls + numberCountcalls + mainChar ));
+      word += String.fromCharCode(mainChar);
+      word += String.fromCharCode(lowerVowels.getRandomChar(randomseed * 3333 + lowerCountcalls + upperCountcalls + numberCountcalls + mainChar ));
+      word += String.fromCharCode(lowerCase.getRandomChar(randomseed * 4444 + lowerCountcalls + upperCountcalls + numberCountcalls + mainChar ));
+      return word;
+    }
+
+    function englishUpperWord6 (mainChar)
+    {
+      upperCountcalls += 1;
+      var word = "";
+      word += String.fromCharCode(mainChar);
+      word += String.fromCharCode(upperVowels.getRandomChar(randomseed * 345 + lowerCountcalls + upperCountcalls + numberCountcalls + mainChar ));
+      word += String.fromCharCode(upperCase.getRandomChar(randomseed * 7685 + lowerCountcalls + upperCountcalls + numberCountcalls + mainChar ));
+      word += String.fromCharCode(mainChar);
+      word += String.fromCharCode(upperVowels.getRandomChar(randomseed * 34562 + lowerCountcalls + upperCountcalls + numberCountcalls + mainChar ));
+      word += String.fromCharCode(upperCase.getRandomChar(randomseed * 43756 + lowerCountcalls + upperCountcalls + numberCountcalls + mainChar ));
+      return word;
+    }    
+
+    function englishMixedWords6 (Chars){
+      var collector = "";
+      for (var i = Chars.getStartChar(); i <= Chars.getEndChar(); i++)
+      {
+        collector += englishMixedWord6 (i) + " ";
+      }
+      return collector;
+    }
+
+    function englishUpperWords6 (Chars){
+      var collector = "";
+      for (var i = Chars.getStartChar(); i <= Chars.getEndChar(); i++)
+      {
+        collector += englishUpperWord6 (i) + " ";
+      }
+      return collector;
+    }    
+
+    function numberMixedWords6 (Chars){
+      var collector = "";
+      for (var i = Chars.getStartChar(); i <= Chars.getEndChar(); i++)
+      {
+        collector += numberWord6 (i) + " ";
+      }
+      return collector;
+    }    
+
+
+    function symbolMixedWords6 (Chars){
+      var collector = "";
+      for (var i = Chars.getStartChar(); i <= Chars.getEndChar(); i++)
+      {
+        if (Chars.isValid(i)) collector += symbolWord6 (i) + " ";
+      }
+      /*alert(collector );*/
+      return collector;
+      /*return "asdfjkhaslkjdfhlaksjdhflaskjhdflksjad";*/
+    }
+    
+
+    function englishText ()
+    {
+      return englishMixedWords6 (upperCase) + englishMixedWords6 (lowerCase)  + englishUpperWords6 (upperCase) + numberMixedWords6(numbers) + symbolMixedWords6(symbols);
+    }
+
+
+
+    function updatePage(uvalue){ 
+      if (document.getElementById("block").value)   block      = document.getElementById("block").options[document.getElementById("block").selectedIndex].value;
+      if (document.getElementById("family").value)  family     = document.getElementById("family").value;
+      if (document.getElementById("fgcolor").value) fgcolor    = document.getElementById("fgcolor").value;
+      if (document.getElementById("bgcolor").value) bgcolor    = document.getElementById("bgcolor").value;
+      if (document.getElementById("min").value)     min        = parseFloat(document.getElementById("min").value);
+      if (document.getElementById("max").value)     max        = parseFloat(document.getElementById("max").value);
+      if (document.getElementById("step").value)    step       = parseFloat(document.getElementById("step").value);
+      if (document.getElementById("random").value)  randomseed = parseFloat(document.getElementById("random").value);
+      useText = document.getElementById("usetext").value;
+      document.getElementById("family").style.fontFamily = family;
+
+      /* reset count calls on things that should stay the same! */
+      if (randomseed != 0)
+      {
+        numberCountcalls = 0;
+        symbolCountcalls = 0;
+        upperCountcalls = 0;
+        lowerCountcalls = 0;
+      }
+      
+      if (useText != "") Text = useText;
+      else if (showDefaultText) Text = defaultText;
+      else Text = gettext(charstart, charend);
+
+     /* else Text = englishText();*/
+
+      if (uvalue == 1) save();
+      else populate();
+    }
+
+    function generateRandom(seed) {
+      randomCountcalls += 1;
+      if (!seed || randomseed == 0){
+        seed = new Date().getTime() + randomCountcalls  + numberCountcalls + upperCountcalls + lowerCountcalls + symbolCountcalls ;
+        seed = (seed * randomCountcalls + 49297 + numberCountcalls + upperCountcalls + lowerCountcalls + symbolCountcalls) % 233280;
+        return seed/(233280.0);
+      }
+      seed = (seed*9301+49297) % 233280;
+      return seed/(233280.0);
+    }
+
+    function randomChar(c1, c2, aseed){
+      return c1 + Math.round((c2-c1) * generateRandom(aseed));
+
+    }
+
+
+    //alert(random(1));
+    function gettext (c1, c2) {
+      var i = 0;
+      var collector = "";
+      var string6 = "";
+
+      for (i = c1; i <= c2 ; i=i+1){
+        //string6 = randomChar
+        //collector = collector + parseInt(i);
+        //collector = collector + String.fromCharCode(i);
+        string6 = String.fromCharCode(i)
+                + String.fromCharCode(randomChar(c1,c2,randomseed + i))
+                + String.fromCharCode(randomChar(c1,c2,randomseed + i * 1111))
+                + String.fromCharCode(i)
+                + String.fromCharCode(randomChar(c1,c2,randomseed + i * 2222))
+                + String.fromCharCode(randomChar(c1,c2,randomseed + i * 3333))
+                + " ";
+        collector = collector + string6;
+      }
+
+      return collector;
+    }
+
+
+    function fillTable() {
+
+      var Parent = document.getElementById('maintable');
+      while(Parent.hasChildNodes())
+      {
+        Parent.removeChild(Parent.firstChild);
+      }
+
+      row=new Array();
+      cell=new Array();
+      style="";
+      weight="";
+      p1 = min;
+      p2 = max;
+
+      numRows = ((p2 - p1) / step) + 1;
+      numCols = 4;
+
+      tab=document.createElement('table');
+      tab.setAttribute('id','newtable');
+
+      tbo=document.createElement('tbody');
+
+      for(c = 0; c < numRows; c++){
+        row[c]=document.createElement('tr');
+          /*row[c].style.color = "inherit;";
+          row[c].style.backgroundColor = "inherit;";*/
+
+        for(k = 0; k < numCols * 2; k = k + 2) {
+          switch (k) {
+            case 0: style="normal"; weight="normal"; break;
+            case 2: style="normal"; weight="bold"; break;
+            case 4: style="italic"; weight="normal"; break;
+            case 6: style="italic"; weight="bold"; break;
+          }
+
+          cell[k]=document.createElement('td');
+          cont=document.createTextNode((c+1)*(k+1))
+          cell[k].appendChild(cont);
+          row[c].appendChild(cell[k]);
+          cell[k].style.verticalAlign = "top";
+          cell[k].className = "mainClass";
+          cell[k].innerHTML = p1 + (c * step) + "px";
+
+
+          cell[k+1]=document.createElement('td');
+          cont=document.createTextNode((c+1)*(k+2))
+          cell[k+1].appendChild(cont);
+          row[c].appendChild(cell[k+1]);
+
+
+          cell[k+1].style.lineHeight = "1.5";
+          cell[k+1].style.textAlign = "justify";
+          cell[k+1].style.textTransform = "uppercase";
+          cell[k+1].style.letterSpacing = "normal";
+          cell[k+1].style.wordSpacing = "2mm";
+          cell[k+1].style.fontWeight = weight;
+          cell[k+1].style.verticalAlign = "top";
+          cell[k+1].style.fontStyle = style;
+          cell[k+1].style.fontFamily = family;
+          cell[k+1].style.fontSize = p1 + (c * step) + "px";
+          cell[k+1].innerHTML = Text;
+
+
+        }
+        tbo.appendChild(row[c]);
+      }
+      tab.appendChild(tbo);
+      /*tab.style.color = "inherit;"
+      tab.style.backgroudColor = "inherit;"*/
+
+      document.getElementById('maintable').appendChild(tab);
+    }
+
+
+    function populate(){
+        fillTable();
+    }
+
+    function gup( name )
+    {
+      name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+      var regexS = "[\\?&]"+name+"=([^&#]*)";
+      var regex = new RegExp( regexS );
+      var results = regex.exec( window.location.href );
+      if( results == null )
+        return null;
+      else
+        return results[1];
+    }
+
+    function getIndexByValue(obj, ovalue){      
+      for (var i = 0; i < obj.length; i++){
+        if (obj.options[i].value == ovalue){
+          return i;
+        }
+      }
+    }
+
+    function setFields(){
+      document.getElementById("block").selectedIndex = getIndexByValue(document.getElementById("block"), block);
+      document.getElementById("family").value  = family;
+      document.getElementById("family").style.fontFamily = family;
+      document.getElementById("min").value     = min;
+      document.getElementById("max").value     = max;
+      document.getElementById("step").value    = step;
+      document.getElementById("random").value  = randomseed;
+      document.getElementById("usetext").value = useText;
+      document.getElementById("fgcolor").value = fgcolor;
+      document.getElementById("bgcolor").value = bgcolor;
+      setBGColor(bgcolor);
+      setFGColor(fgcolor);
+      setRange();
+
+    }
+
+    function setBGColor(acolor){
+      bgcolor = acolor;
+      document.getElementById("maintable").style.backgroundColor = acolor;
+    }
+
+
+    function setFGColor(acolor){
+      fgcolor = acolor;
+      document.getElementById("maintable").style.color = acolor;
+    }
+
+
+    function loadPage(){
+      resetValues();
+      if (gup("block")){  block      = parseInt(gup("block"));}
+      if (gup("family"))  family     = URLDecode(gup("family"));
+      if (gup("min"))     min        = parseFloat(gup("min"));
+      if (gup("max"))     max        = parseFloat(gup("max"));
+      if (gup("step"))    step       = parseFloat(gup("step"));
+      if (gup("random"))  randomseed = parseFloat(gup("random"));
+      if (gup("usetext")) useText    = URLDecode(gup("usetext"));
+      if (gup("fgcolor")) fgcolor    = (gup("fgcolor"));
+      if (gup("bgcolor")) bgcolor    = (gup("bgcolor"));
+      setFields();
+
+      if (useText != "") Text = useText;
+      else if (showDefaultText) Text = defaultText;
+      else Text = gettext(charstart, charend);
+      populate();
+    }
+
+    function resetPage(){
+      
+      location.href = location.pathname;
+    }
+
+    function save(){
+      location.href = location.pathname + "?family=" + URLEncode(family)
+        + "&block=" + block + "&min=" + min + "&max=" + max + "&step="
+        + step + "&random=" + randomseed + "&fgcolor=" + fgcolor 
+        + "&bgcolor=" + bgcolor + "&usetext=" + URLEncode(useText);
+    }
+
+    function URLEncode(inputString)
+    {
+        
+        var encodedInputString=escape(inputString);
+        encodedInputString=encodedInputString.replace("+", "%2B");
+        encodedInputString=encodedInputString.replace("/", "%2F");
+        return encodedInputString;
+      }
+    function URLDecode(encodedInputString)
+    {
+        
+        var inputString=unescape(encodedInputString);
+        return inputString;
+      }      
+
+    function URLEncode2 (clearString) {
+      var output = '';
+      var x = 0;
+      clearString = clearString.toString();
+      var regex = /(^[a-zA-Z0-9_.]*)/;
+      while (x < clearString.length) {
+        var match = regex.exec(clearString.substr(x));
+        if (match != null && match.length > 1 && match[1] != '') {
+          output += match[1];
+          x += match[1].length;
+        } else {
+          if (clearString[x] == ' ')
+            output += '+';
+          else {
+            var charCode = clearString.charCodeAt(x);
+            var hexVal = charCode.toString(16);
+            output += '%' + ( hexVal.length < 2 ? '0' : '' ) + hexVal.toUpperCase();
+          }
+          x++;
+        }
+      }
+      return output;
+    }
+
+    function URLDecode2 (encodedString) {
+      var output = encodedString;
+      var binVal, thisString;
+      var myregexp = /(%[^%]{2})/;
+      while ((match = myregexp.exec(output)) != null
+                && match.length > 1
+                && match[1] != '') {
+        binVal = parseInt(match[1].substr(1),16);
+        thisString = String.fromCharCode(binVal);
+        output = output.replace(match[1], thisString);
+      }
+      return output;
+    }
+
+    function roundNumber(num, dec) {
+      var result = Math.round(num*Math.pow(10,dec))/Math.pow(10,dec);
+      return result;
+    }
+
+    function setRange(){
+      showDefaultText = false;
+      block = document.getElementById("block").options[document.getElementById("block").selectedIndex].value;
+      switch (block) {
+        case "200": charstart = 0x0020; charend = 0x007F; showDefaultText = true; break;
+        case "0": charstart = 0x0020; charend = 0x007F; break;
+        case "1": charstart = 0x00A0; charend = 0x00FF; break;
+        case "2": charstart = 0x0100; charend = 0x017F; break;
+        case "3": charstart = 0x0180; charend = 0x024F; break;
+        case "4": charstart = 0x0250; charend = 0x02AF; break;
+        case "5": charstart = 0x02B0; charend = 0x02FF; break;
+        case "6": charstart = 0x0300; charend = 0x036F; break;
+        case "7": charstart = 0x0370; charend = 0x03FF; break;
+        case "8": charstart = 0x0400; charend = 0x045F; break;
+        case "9": charstart = 0x0500; charend = 0x052F; break;
+        case "10": charstart = 0x0530; charend = 0x058F; break;
+        case "11": charstart = 0x0590; charend = 0x05FF; break;
+        case "12": charstart = 0x0600; charend = 0x06FF; break;
+        case "13": charstart = 0x0700; charend = 0x074F; break;
+        case "14": charstart = 0x0780; charend = 0x07BF; break;
+        case "15": charstart = 0x0900; charend = 0x097F; break;
+        case "16": charstart = 0x0980; charend = 0x09FF; break;
+        case "17": charstart = 0x0A00; charend = 0x0A7F; break;
+        case "18": charstart = 0x0A80; charend = 0x0AFF; break;
+        case "19": charstart = 0x0B00; charend = 0x0B7F; break;
+        case "20": charstart = 0x0B80; charend = 0x0BFF; break;
+        case "21": charstart = 0x0C00; charend = 0x0C7F; break;
+        case "22": charstart = 0x0C80; charend = 0x0CFF; break;
+        case "23": charstart = 0x0D00; charend = 0x0D7F; break;
+        case "24": charstart = 0x0D80; charend = 0x0DFF; break;
+        case "25": charstart = 0x0E00; charend = 0x0E7F; break;
+        case "26": charstart = 0x0E80; charend = 0x0EFF; break;
+        case "27": charstart = 0x0F00; charend = 0x0FFF; break;
+        case "28": charstart = 0x1000; charend = 0x109F; break;
+        case "29": charstart = 0x10A0; charend = 0x10FF; break;
+        case "30": charstart = 0x1100; charend = 0x11FF; break;
+        case "31": charstart = 0x1200; charend = 0x137F; break;
+        case "32": charstart = 0x13A0; charend = 0x13FF; break;
+        case "33": charstart = 0x1400; charend = 0x167F; break;
+        case "34": charstart = 0x1680; charend = 0x169F; break;
+        case "35": charstart = 0x16A0; charend = 0x16FF; break;
+        case "36": charstart = 0x1700; charend = 0x171F; break;
+        case "37": charstart = 0x1720; charend = 0x173F; break;
+        case "38": charstart = 0x1740; charend = 0x175F; break;
+        case "39": charstart = 0x1760; charend = 0x177F; break;
+        case "40": charstart = 0x1780; charend = 0x17FF; break;
+        case "41": charstart = 0x1800; charend = 0x18AF; break;
+        case "42": charstart = 0x1900; charend = 0x194F; break;
+        case "43": charstart = 0x1950; charend = 0x197F; break;
+        case "44": charstart = 0x19E0; charend = 0x19FF; break;
+        case "45": charstart = 0x1D00; charend = 0x1D7F; break;
+        case "46": charstart = 0x1E00; charend = 0x1EFF; break;
+        case "47": charstart = 0x1F00; charend = 0x1FFF; break;
+        case "48": charstart = 0x2000; charend = 0x206F; break;
+        case "49": charstart = 0x2070; charend = 0x209F; break;
+        case "50": charstart = 0x20A0; charend = 0x20CF; break;
+        case "51": charstart = 0x20D0; charend = 0x20FF; break;
+        case "52": charstart = 0x2100; charend = 0x214F; break;
+        case "53": charstart = 0x2150; charend = 0x218F; break;
+        case "54": charstart = 0x2190; charend = 0x21FF; break;
+        case "55": charstart = 0x2200; charend = 0x22FF; break;
+        case "56": charstart = 0x2300; charend = 0x23FF; break;
+        case "57": charstart = 0x2400; charend = 0x243F; break;
+        case "58": charstart = 0x2440; charend = 0x245F; break;
+        case "59": charstart = 0x2460; charend = 0x24FF; break;
+        case "60": charstart = 0x2500; charend = 0x257F; break;
+        case "61": charstart = 0x2580; charend = 0x259F; break;
+        case "62": charstart = 0x25A0; charend = 0x25FF; break;
+        case "63": charstart = 0x2600; charend = 0x26FF; break;
+        case "64": charstart = 0x2700; charend = 0x27BF; break;
+        case "65": charstart = 0x27C0; charend = 0x27EF; break;
+        case "66": charstart = 0x27F0; charend = 0x27FF; break;
+        case "67": charstart = 0x2800; charend = 0x28FF; break;
+        case "68": charstart = 0x2900; charend = 0x297F; break;
+        case "69": charstart = 0x2980; charend = 0x29FF; break;
+        case "70": charstart = 0x2A00; charend = 0x2AFF; break;
+        case "71": charstart = 0x2B00; charend = 0x2BFF; break;
+        case "72": charstart = 0x2E80; charend = 0x2EFF; break;
+        case "73": charstart = 0x2F00; charend = 0x2FDF; break;
+        case "74": charstart = 0x2FF0; charend = 0x2FFF; break;
+        case "75": charstart = 0x3000; charend = 0x303F; break;
+        case "76": charstart = 0x3040; charend = 0x309F; break;
+        case "77": charstart = 0x30A0; charend = 0x30FF; break;
+        case "78": charstart = 0x3100; charend = 0x312F; break;
+        case "79": charstart = 0x3130; charend = 0x318F; break;
+        case "80": charstart = 0x3190; charend = 0x319F; break;
+        case "81": charstart = 0x31A0; charend = 0x31BF; break;
+        case "82": charstart = 0x31F0; charend = 0x31FF; break;
+        case "83": charstart = 0x3200; charend = 0x32FF; break;
+        case "84": charstart = 0x3300; charend = 0x33FF; break;
+        case "85": charstart = 0x3400; charend = 0x4DBF; break;
+        case "86": charstart = 0x4DC0; charend = 0x4DFF; break;
+        case "87": charstart = 0x4E00; charend = 0x9FFF; break;
+        case "88": charstart = 0xA000; charend = 0xA48F; break;
+        case "89": charstart = 0xA490; charend = 0xA4CF; break;
+        case "90": charstart = 0xAC00; charend = 0xD7AF; break;
+        case "91": charstart = 0xD800; charend = 0xDB7F; break;
+        case "92": charstart = 0xDB80; charend = 0xDBFF; break;
+        case "93": charstart = 0xDC00; charend = 0xDFFF; break;
+        case "94": charstart = 0xE000; charend = 0xF8FF; break;
+        case "95": charstart = 0xF900; charend = 0xFAFF; break;
+        case "96": charstart = 0xFB00; charend = 0xFB4F; break;
+        case "97": charstart = 0xFB50; charend = 0xFDFF; break;
+        case "98": charstart = 0xFE00; charend = 0xFE0F; break;
+        case "99": charstart = 0xFE20; charend = 0xFE2F; break;
+        case "100": charstart = 0xFE30; charend = 0xFE4F; break;
+        case "101": charstart = 0xFE50; charend = 0xFE6F; break;
+        case "102": charstart = 0xFE70; charend = 0xFEFF; break;
+        case "103": charstart = 0xFF00; charend = 0xFFEF; break;
+        case "104": charstart = 0xFFF0; charend = 0xFFFF; break;
+        default: break;
+      }
+    }
+
+
+
+
+    /*************** WORD CREATION ******************/
+
+
+
+    </script>
+  </head>
+  <body onload="loadPage();">
+
+  <script type="text/javascript">
+var spinCtrl = new SpinControl();
+spinCtrl.GetAccelerationCollection().Add(new SpinControlAcceleration(1, 500));
+spinCtrl.GetAccelerationCollection().Add(new SpinControlAcceleration(5, 1750));
+document.body.appendChild(spinCtrl.GetContainer());
+spinCtrl.StartListening();
+</script>
+    <div align=center><table style="border: solid; border-style: groove;"><tr><td>
+      <form>
+        <div>
+          Font Name: <input type="text" id="family" name="family"  />
+          Font Color: <input size="6" id="fgcolor" class="color" onchange="setFGColor(this.value);">
+          Background Color: <input size="6" id="bgcolor" class="color" onchange="setBGColor(this.value);">
+        </div>
+        <div>
+          Min Size: <input size="3" type="text" id="min" name="min"  />
+          Max Size: <input size="3" type="text" id="max" name="max" />
+          Step: <input size="3" type="text" id="step" name="step" />
+          Random Seed: <input size="3" type="text" id="random" name="random" />
+        </div>
+        <div>
+          <select onchange="setRange();" name="block" id="block">
+            <option value="200">Default Text</option>
+            <option value="0">0020-007F &nbsp; Basic Latin</option>
+            <option value="1">00A0-00FF &nbsp; Latin-1 Supplement</option>
+            <option value="2">0100-017F &nbsp; Latin Extended-A</option>
+            <option value="3">0180-024F &nbsp; Latin Extended-B</option>
+            <option value="4">0250-02AF &nbsp; IPA Extensions</option>
+            <option value="5">02B0-02FF &nbsp; Spacing Modifier Letters</option>
+            <option value="6">0300-036F &nbsp; Combining Diacritical Marks</option>
+            <option value="7">0370-03FF &nbsp; Greek and Coptic</option>
+            <option value="8">0400-04FF &nbsp; Cyrillic</option>
+            <option value="9">0500-052F &nbsp; Cyrillic Supplementary</option>
+            <option value="10">0530-058F &nbsp; Armenian</option>
+            <option value="11">0590-05FF &nbsp; Hebrew</option>
+            <option value="12">0600-06FF &nbsp; Arabic</option>
+            <option value="13">0700-074F &nbsp; Syriac</option>
+            <option value="14">0780-07BF &nbsp; Thaana</option>
+            <option value="15">0900-097F &nbsp; Devanagari</option>
+            <option value="16">0980-09FF &nbsp; Bengali</option>
+            <option value="17">0A00-0A7F &nbsp; Gurmukhi</option>
+            <option value="18">0A80-0AFF &nbsp; Gujarati</option>
+            <option value="19">0B00-0B7F &nbsp; Oriya</option>
+            <option value="20">0B80-0BFF &nbsp; Tamil</option>
+            <option value="21">0C00-0C7F &nbsp; Telugu</option>
+            <option value="22">0C80-0CFF &nbsp; Kannada</option>
+            <option value="23">0D00-0D7F &nbsp; Malayalam</option>
+            <option value="24">0D80-0DFF &nbsp; Sinhala</option>
+            <option value="25">0E00-0E7F &nbsp; Thai</option>
+            <option value="26">0E80-0EFF &nbsp; Lao</option>
+            <option value="27">0F00-0FFF &nbsp; Tibetan</option>
+            <option value="28">1000-109F &nbsp; Myanmar</option>
+            <option value="29">10A0-10FF &nbsp; Georgian</option>
+            <option value="30">1100-11FF &nbsp; Hangul Jamo</option>
+            <option value="31">1200-137F &nbsp; Ethiopic</option>
+            <option value="32">13A0-13FF &nbsp; Cherokee</option>
+            <option value="33">1400-167F &nbsp; Unified Canadian Aboriginal Syllabics</option>
+            <option value="34">1680-169F &nbsp; Ogham</option>
+            <option value="35">16A0-16FF &nbsp; Runic</option>
+            <option value="36">1700-171F &nbsp; Tagalog</option>
+            <option value="37">1720-173F &nbsp; Hanunoo</option>
+            <option value="38">1740-175F &nbsp; Buhid</option>
+            <option value="39">1760-177F &nbsp; Tagbanwa</option>
+            <option value="40">1780-17FF &nbsp; Khmer</option>
+            <option value="41">1800-18AF &nbsp; Mongolian</option>
+            <option value="42">1900-194F &nbsp; Limbu</option>
+            <option value="43">1950-197F &nbsp; Tai Le</option>
+            <option value="44">19E0-19FF &nbsp; Khmer Symbols</option>
+            <option value="45">1D00-1D7F &nbsp; Phonetic Extensions</option>
+            <option value="46">1E00-1EFF &nbsp; Latin Extended Additional</option>
+            <option value="47">1F00-1FFF &nbsp; Greek Extended</option>
+            <option value="48">2000-206F &nbsp; General Punctuation</option>
+            <option value="49">2070-209F &nbsp; Superscripts and Subscripts</option>
+            <option value="50">20A0-20CF &nbsp; Currency Symbols</option>
+            <option value="51">20D0-20FF &nbsp; Combining Diacritical Marks for Symbols</option>
+            <option value="52">2100-214F &nbsp; Letterlike Symbols</option>
+            <option value="53">2150-218F &nbsp; Number Forms</option>
+            <option value="54">2190-21FF &nbsp; Arrows</option>
+            <option value="55">2200-22FF &nbsp; Mathematical Operators</option>
+            <option value="56">2300-23FF &nbsp; Miscellaneous Technical</option>
+            <option value="57">2400-243F &nbsp; Control Pictures</option>
+            <option value="58">2440-245F &nbsp; Optical Character Recognition</option>
+            <option value="59">2460-24FF &nbsp; Enclosed Alphanumerics</option>
+            <option value="60">2500-257F &nbsp; Box Drawing</option>
+            <option value="61">2580-259F &nbsp; Block Elements</option>
+            <option value="62">25A0-25FF &nbsp; Geometric Shapes</option>
+            <option value="63">2600-26FF &nbsp; Miscellaneous Symbols</option>
+            <option value="64">2700-27BF &nbsp; Dingbats</option>
+            <option value="65">27C0-27EF &nbsp; Miscellaneous Mathematical Symbols-A</option>
+            <option value="66">27F0-27FF &nbsp; Supplemental Arrows-A</option>
+            <option value="67">2800-28FF &nbsp; Braille Patterns</option>
+            <option value="68">2900-297F &nbsp; Supplemental Arrows-B</option>
+            <option value="69">2980-29FF &nbsp; Miscellaneous Mathematical Symbols-B</option>
+            <option value="70">2A00-2AFF &nbsp; Supplemental Mathematical Operators</option>
+            <option value="71">2B00-2BFF &nbsp; Miscellaneous Symbols and Arrows</option>
+            <option value="72">2E80-2EFF &nbsp; CJK Radicals Supplement</option>
+            <option value="73">2F00-2FDF &nbsp; Kangxi Radicals</option>
+            <option value="74">2FF0-2FFF &nbsp; Ideographic Description Characters</option>
+            <option value="75">3000-303F &nbsp; CJK Symbols and Punctuation</option>
+            <option value="76">3040-309F &nbsp; Hiragana</option>
+            <option value="77">30A0-30FF &nbsp; Katakana</option>
+            <option value="78">3100-312F &nbsp; Bopomofo</option>
+            <option value="79">3130-318F &nbsp; Hangul Compatibility Jamo</option>
+            <option value="80">3190-319F &nbsp; Kanbun</option>
+            <option value="81">31A0-31BF &nbsp; Bopomofo Extended</option>
+            <option value="82">31F0-31FF &nbsp; Katakana Phonetic Extensions</option>
+            <option value="83">3200-32FF &nbsp; Enclosed CJK Letters and Months</option>
+            <option value="84">3300-33FF &nbsp; CJK Compatibility</option>
+            <option value="85">3400-4DBF &nbsp; CJK Unified Ideographs Extension A</option>
+            <option value="86">4DC0-4DFF &nbsp; Yijing Hexagram Symbols</option>
+            <option value="87">4E00-9FFF &nbsp; CJK Unified Ideographs</option>
+            <option value="88">A000-A48F &nbsp; Yi Syllables</option>
+            <option value="89">A490-A4CF &nbsp; Yi Radicals</option>
+            <option value="90">AC00-D7AF &nbsp; Hangul Syllables</option>
+            <option value="91">D800-DB7F &nbsp; High Surrogates</option>
+            <option value="92">DB80-DBFF &nbsp; High Private Use Surrogates</option>
+            <option value="93">DC00-DFFF &nbsp; Low Surrogates</option>
+            <option value="94">E000-F8FF &nbsp; Private Use Area</option>
+            <option value="95">F900-FAFF &nbsp; CJK Compatibility Ideographs</option>
+            <option value="96">FB00-FB4F &nbsp; Alphabetic Presentation Forms</option>
+            <option value="97">FB50-FDFF &nbsp; Arabic Presentation Forms-A</option>
+            <option value="98">FE00-FE0F &nbsp; Variation Selectors</option>
+            <option value="99">FE20-FE2F &nbsp; Combining Half Marks</option>
+            <option value="100">FE30-FE4F &nbsp; CJK Compatibility Forms</option>
+            <option value="101">FE50-FE6F &nbsp; Small Form Variants</option>
+            <option value="102">FE70-FEFF &nbsp; Arabic Presentation Forms-B</option>
+            <option value="103">FF00-FFEF &nbsp; Halfwidth and Fullwidth Forms</option>
+            <option value="104">FFF0-FFFF &nbsp; Specials</option>
+          </select>
+          <span style="font-style: italic">-or-</span>  Use Text: <input type="text" id="usetext" name="usetext" />
+        </div>
+        <div style="text-align: center">
+          <input style="font-weight: bold" type="button" value="Update" onclick="updatePage(0);" >
+          <input type="button" value="Save" onclick="updatePage(1);" >
+          <input type="button" value="Reset" onclick="resetPage();" >
+        </div>
+      </form>
+    </tr></td></table></div>
+    <br />
+    <div id="maintable" name="maintable">
+    </div>
+  </body>
+</html>
