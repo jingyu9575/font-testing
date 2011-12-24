@@ -404,6 +404,7 @@
 
 			if (uvalue == 1) save();
 			else populate();
+
 		}
 
 		function generateRandom(seed) {
@@ -810,6 +811,12 @@
 			updatePage(0);
 		}
 
+		function setFocus()
+		{
+			document.getElementById("family").focus();
+			document.getElementById("family").select();
+		}
+
 		function spininit ()
 		{
 			var spinCtrlMin = new SpinControl();
@@ -862,6 +869,8 @@
 				if (document.getElementById('max').value < newVal) spinCtrlMax.SetCurrentValue(newVal);
 				document.getElementById('min').value = newVal;
 				updatePage();
+				document.body.tabIndex = 0;
+				document.body.focus();
 			}
 
 			function spinCtrlSpinMax(sender, newVal)
@@ -869,24 +878,30 @@
 				if (document.getElementById('min').value > newVal) spinCtrlMin.SetCurrentValue(newVal);
 				document.getElementById('max').value = newVal;
 				updatePage();
+				document.body.tabIndex = 0;
+				document.body.focus();
 			}
 
 			function spinCtrlSpinStep(sender, newVal)
 			{
 				document.getElementById('step').value = newVal;
 				updatePage();
+				document.body.tabIndex = 0;
+				document.body.focus();
 			}
 
 			function spinCtrlSpinRandom(sender, newVal)
 			{
 				document.getElementById('random').value = newVal;
 				updatePage();
+				document.body.tabIndex = 0;
+				document.body.focus();
 			}
 		}
 		/*************** WORD CREATION ******************/
 		</script>
 	</head>
-	<body onload="loadPage(); spininit();">
+	<body onload="loadPage(); spininit(); setFocus();">
 
 		<input size="3" type="text" id="min" name="min" style="display: none;"  />
 		<input size="3" type="text" id="max" name="max"  style="display: none;"  />
@@ -1049,7 +1064,7 @@
 					</table>
 				</div>
 				<div style="text-align: center">
-					<input style="font-weight: bold" type="button" value="Update" onclick="updatePage(0);" >
+					<input type="submit" style="font-weight: bold" type="button" value="Update" onclick="updatePage(0);" >
 					<input type="button" value="Save" onclick="updatePage(1);" >
 					<input type="button" value="Reset" onclick="resetPage();" >
 				</div>
