@@ -898,6 +898,22 @@
 				document.body.focus();
 			}
 		}
+
+		function submitenter(myfield,e)
+		{
+			var keycode;
+			if (window.event) keycode = window.event.keyCode;
+			else if (e) keycode = e.which;
+			else return true;
+
+			if (keycode == 13)
+			{
+				updatePage(0);
+				return false;
+			}
+			else return true;
+		}
+
 		/*************** WORD CREATION ******************/
 		</script>
 	</head>
@@ -920,7 +936,7 @@
 					<select id="fonts_list" onchange=setFamily(this);>
 						<option value="" >Select a Font</option>
 					</select>
-					<input type="text" id="family" name="family"  />
+					<input onKeyPress="return submitenter(this,event)" type="text" id="family" name="family"  />
 					Font Color: <input size="6" id="fgcolor" class="color" onchange="setFGColor(this.value);">
 					Background Color: <input size="6" id="bgcolor" class="color" onchange="setBGColor(this.value);">
 				</div>
@@ -1064,7 +1080,7 @@
 					</table>
 				</div>
 				<div style="text-align: center">
-					<input type="submit" style="font-weight: bold" type="button" value="Update" onclick="updatePage(0);" >
+					<input style="font-weight: bold" type="button" value="Update" onclick="updatePage(0);" >
 					<input type="button" value="Save" onclick="updatePage(1);" >
 					<input type="button" value="Reset" onclick="resetPage();" >
 				</div>
